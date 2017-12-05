@@ -1,7 +1,7 @@
 //Final Missile Command Game with Three.js
 var zooming = true;
-THREE.cache=true;
-var Number_of_Missiles=100;
+THREE.Cache.enabled = true;
+var Number_of_Missiles=500;
 current_position = new THREE.Vector3();
 Building_position =[];
 var Anti_Missiles = new THREE.Object3D();
@@ -9,23 +9,24 @@ var score=0;
 var ammo=20;
 var level =1;
 var Buildings_Destroyed=0;
+var game_over=false;
 // Set the scene size.
-const WIDTH = window.innerWidth;
-const HEIGHT = window.innerHeight;
+var WIDTH = window.innerWidth;
+var HEIGHT = window.innerHeight;
 
 // Set some camera attributes.
-const VIEW_ANGLE = 45;
-const ASPECT = WIDTH / HEIGHT;
-const NEAR = 0.1;
-const FAR = 10000;
+var VIEW_ANGLE = 45;
+var ASPECT = WIDTH / HEIGHT;
+var NEAR = 0.1;
+var FAR = 10000;
 
 // Get the DOM element to attach to
 const container = document.querySelector('#container');
 
 // Create a WebGL renderer, camera
 // and a scene
-const renderer = new THREE.WebGLRenderer({antialias:true});
-const camera =
+var renderer = new THREE.WebGLRenderer({antialias:true});
+var camera =
     new THREE.PerspectiveCamera(
         VIEW_ANGLE,
         ASPECT,
@@ -106,14 +107,7 @@ const RINGS = 32;
 // sphere geometry - we will cover
 // the sphereMaterial next!
 
-const sphere = new THREE.Mesh(
 
-  new THREE.SphereGeometry(
-    RADIUS,
-    SEGMENTS,
-    RINGS),
-
-  sphereMaterial);
 //Anti-Ballistic Missiles
 function AddAntiMissile(event)
 {
@@ -129,13 +123,15 @@ function AddAntiMissile(event)
  var dir = vector.sub(camera.position).normalize();
  var distance = -camera.position.z / dir.z;
  var pos = camera.position.clone().add(dir.multiplyScalar(distance));
+    const sphere = new THREE.Mesh(
+
+      new THREE.SphereGeometry(
+        RADIUS,
+        SEGMENTS,
+        RINGS),
+
+      sphereMaterial);
  sphere.position.copy(pos);
- //
-  //sphere.position.x = (mouse.x)*window.innerWidth/2;
-  //sphere.position.y = (mouse.y)*window.innerHeight/2;
-  //sphere.position.z = 0;
-  console.log(sphere.position);
-  // Finally, add the sphere to the scene.
   Anti_Missiles.add(sphere);
   }
   scene.add(Anti_Missiles);
@@ -153,7 +149,8 @@ function(obj)
     
     clonedMissile = obj.clone();
     var position= Math.random() *(5 + 5)-5;
-    clonedMissile.position.set( 50*position, 200*i, 0);
+    //var target= Math.random()*5;
+    clonedMissile.position.set( 50*position, 75*i, 0);
     clonedMissile.rotateZ(Math.PI/2);
     Model.add(clonedMissile);
     //scene.add(clonedMissile);
@@ -161,36 +158,7 @@ function(obj)
   scene.add(Model);
 }
 );
-//Buildings
-/*
-l.load("building.obj",
-  function (obj) {
-    for (var i = -1; i < 2; i++) {
-      clonedBuilding = obj.clone();
-      clonedBuilding.scale.set(5,5,5);
-      var texture = new THREE.TextureLoader().load("building.jpg");
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(4, 4);
-      var material = new THREE.MeshBasicMaterial({
-        side: THREE.DoubleSide,map: texture
-      });
-      clonedBuilding.traverse(function (child) {
 
-        if (child instanceof THREE.Mesh) {
-
-          child.material = material;
-
-        }
-
-      });
-      clonedBuilding.position.set(i * 100, -100, 0);
-      scene.add(clonedBuilding);
-    }
-    //scene.add(obj);
-  }
-);
-*/
 var Building_All = new THREE.Object3D();
  for (var i=-2;i<3;i++)
  {
@@ -232,7 +200,7 @@ l.load("title.obj",function(obj,materials){
   Text=obj;
   var material = materials;
   obj.position.set(-150,150,-10);
-  scene.add(obj)})
+  scene.add(obj);});
 
 
 //loader.load("three.js-master\\examples\\models\\animated\\horse.js",addModelToScene);
@@ -245,44 +213,68 @@ l.load("title.obj",function(obj,materials){
 //cube.position.z=-350;
 //scene.add( cube );
 
+//var build=[1,3,1];
 var direction =new THREE.Vector3();
+var destination = new THREE.Vector3();
+var count=0;
+var speed = Math.random() * level * 0.01;
+function UpdateTarget() {
+  //return (build[Math.floor(Math.random() * 2)]);
+  return Math.floor(Math.random() * (Building_position.length)); //random 0 to 5
+  
+}
 function MoveMissile()
 {
-  var speed=Math.random() * level * 3;
+  //workflow is as follows.for each missile, move it towards its target, check for collision.
   
-  for(i=0;i<Number_of_Missiles;i++)
+  for(i=0;i<Number_of_Missiles;i++)//for every missile
   {
+    if (Building_position.length == 0) 
+    {
+      return;
+    }
+    //move towards target
     current_position = Model.children[i].position;
     //calculate the direction vector and move along it.
-    Model.children[i].position.y -= speed;
     //check collision too
-    
-    for(j=0;j<Building_position.length;j++)
+    var j = UpdateTarget(); //returns one of the buildings
+    j= Math.min(i%5,j);
+    for(k=0;k<Building_position.length;k++) //for every building
     {
-      if (current_position.distanceTo(Building_position[j]) < 1000)
-      {
-        if (current_position.distanceTo(Building_position[j]) < 25) {
-          console.log("Collision");
-          Building_All.children[j].position.y = 1000;
+      if (current_position.distanceTo(Building_position[j]) < 30) {
+        console.log("Collision");
+        Building_All.children[j].position.y = -2000;
+        Building_All.children[j].position.z = -2;
+        Building_position.splice(j, 1);
+        Building_All.remove(Building_All.children[j]); //destroy building
+        Model.children[i].position.y -= 550; //destroy missile
+        if (j == 1 || j == 3) {
           Buildings_Destroyed += 1;
         }
-        direction = new THREE.Vector3(100,-10,0).sub(current_position);
-        //direction.multiplyScalar();
-        console.log(direction);
+        if (Buildings_Destroyed == 2) {
+          console.log("GAME OVER!!");
+          //game_over = true;
+        }
+      }
+    }//end collision check 
+    if (current_position.distanceTo(Building_position[j]) < 300) //if on screen
+      {
+        //calculate direction vector to target
+        destination = Building_position[j].clone();
+        direction = destination.sub(current_position);
+        direction.multiplyScalar(speed);
+        //console.log(direction);
         Model.children[i].position.x += direction.x;
         Model.children[i].position.y += direction.y;
-        //Model.children[i].position.y -= Math.random() * speed;
         Model.children[i].position.z += direction.z;
+        
       }
       else //off screen
       {
-        Model.children[i].position.y -= speed;
+         Model.children[i].position.y -= 1; // just move down 
       }
       
-    }
-    
-    
-  }
+    }//end for every missile
   
 }
 
@@ -298,6 +290,14 @@ function addModelToScene(geometry,materials)
 
  document.addEventListener('mousedown', onDocumentMouseDown, false); //for mouse click
  document.addEventListener('mousemove', onDocumentMouseMove, false); //for mouse move
+ document.addEventListener('resize', onWindowResize, false);
+ function onWindowResize(event)
+ {
+   console.log("Resize");
+   camera.aspect = window.innerWidth / window.innerHeight;
+   camera.updateProjectionMatrix();
+   renderer.setSize(window.innerWidth,window.innerHeight);
+ }
 function onDocumentMouseDown(event)
 {
   console.log("Mouse Clicked");
@@ -340,13 +340,19 @@ function update ()
     else
     {
       scene.remove(Text);
-      MoveMissile();
+      if(!game_over)
+      {
+        MoveMissile();
       //AntiMissile();
       RaycasterUpdate();
       //console.log(Building_All);
       //Model.position.y-=1;
-      
-      zooming=false;
+      }
+      else
+      {
+        camera.rotation.y+=1;
+      }
+      //zooming=false;
     }
     
     //console.log(clonedMissile.position.x);
