@@ -1,7 +1,7 @@
 //Final Missile Command Game with Three.js
 var zooming = true;
 THREE.Cache.enabled = true;
-var Number_of_Missiles=500;
+var Number_of_Missiles=100;
 current_position = new THREE.Vector3();
 Building_position =[];
 var Anti_Missiles = new THREE.Object3D();
@@ -144,7 +144,7 @@ var Model=new THREE.Object3D();
 l.load("missile\\AVMT300\\AVMT300.obj",
 function(obj)
 {
-  for ( var i = 0; i < Number_of_Missiles; i ++ )
+  for ( var i = 1; i < Number_of_Missiles+1; i ++ )
   {
     
     clonedMissile = obj.clone();
@@ -202,23 +202,11 @@ l.load("title.obj",function(obj,materials){
   obj.position.set(-150,150,-10);
   scene.add(obj);});
 
-
-//loader.load("three.js-master\\examples\\models\\animated\\horse.js",addModelToScene);
-
-//var geometry = new THREE.BoxGeometry( 10, 10, 10 );
-//var material = new THREE.MeshLambertMaterial( { color: 0x00ff00 } );
-//var cube = new THREE.Mesh( geometry, material );
-//cube.position.x= 50;
-//cube.position.y= 100;
-//cube.position.z=-350;
-//scene.add( cube );
-
 //var build=[1,3,1];
 var direction =new THREE.Vector3();
 var destination = new THREE.Vector3();
-var count=0;
 var speed = Math.random() * level * 0.01;
-function UpdateTarget() {
+function UpdateTarget(i) {
   //return (build[Math.floor(Math.random() * 2)]);
   return Math.floor(Math.random() * (Building_position.length)); //random 0 to 5
   
@@ -226,58 +214,64 @@ function UpdateTarget() {
 function MoveMissile()
 {
   //workflow is as follows.for each missile, move it towards its target, check for collision.
-  
-  for(i=0;i<Number_of_Missiles;i++)//for every missile
+  for(i=0;i<Model.children.length;i++)//for every missile
   {
-    if (Building_position.length == 0) 
-    {
-      return;
-    }
     //move towards target
     current_position = Model.children[i].position;
     //calculate the direction vector and move along it.
-    //check collision too
+    
     var j = UpdateTarget(); //returns one of the buildings
-    j= Math.min(i%5,j);
-    for(k=0;k<Building_position.length;k++) //for every building
+    if(current_position.y>Building_position[j].y)
     {
-      if (current_position.distanceTo(Building_position[j]) < 30) {
-        console.log("Collision");
-        Building_All.children[j].position.y = -2000;
-        Building_All.children[j].position.z = -2;
-        Building_position.splice(j, 1);
-        Building_All.remove(Building_All.children[j]); //destroy building
-        Model.children[i].position.y -= 550; //destroy missile
-        if (j == 1 || j == 3) {
-          Buildings_Destroyed += 1;
-        }
-        if (Buildings_Destroyed == 2) {
-          console.log("GAME OVER!!");
-          //game_over = true;
-        }
-      }
-    }//end collision check 
-    if (current_position.distanceTo(Building_position[j]) < 300) //if on screen
+      if(current_position.distanceTo(Building_position[j]) < 175) //if on screen
       {
-        //calculate direction vector to target
-        destination = Building_position[j].clone();
-        direction = destination.sub(current_position);
-        direction.multiplyScalar(speed);
-        //console.log(direction);
-        Model.children[i].position.x += direction.x;
-        Model.children[i].position.y += direction.y;
-        Model.children[i].position.z += direction.z;
-        
+      //calculate direction vector to target
+      destination = Building_position[j].clone();
+      direction = destination.sub(current_position);
+      direction.multiplyScalar(speed);
+      //console.log(direction);
+      Model.children[i].position.x += direction.x;
+      Model.children[i].position.y += direction.y;
+      Model.children[i].position.z += direction.z;
       }
       else //off screen
       {
-         Model.children[i].position.y -= 1; // just move down 
+        Model.children[i].position.y -= 1; // just move down 
       }
-      
-    }//end for every missile
-  
-}
+    }
+    else //off screen
+    {
+      Model.children[i].position.y -= 1; // just move down 
+    }
+  //check collision too
+  current_position = Model.children[i].position;
+  checkCollisionBuilding(current_position);
+  }//end for every missile
+}//end move missile
 
+function checkCollisionBuilding(current_position)
+{
+  for (k = 0; k < Building_position.length; k++) //for every building
+  {
+    if (current_position.distanceTo(Building_position[k]) < 50) {
+      console.log("Collision");
+     // Building_All.children[k].position.y = -2000;
+      //Building_All.children[k].position.z = -2;
+      //        Model.children[i].position.y -= 550; //destroy missile
+      if (Math.abs(Building_position[k].x)==150) {
+        console.log("Building Hit");
+        Buildings_Destroyed += 1;
+      }
+      if (Buildings_Destroyed == 2) {
+        console.log("GAME OVER!!");
+        game_over = true;
+      }
+      Building_position.splice(k, 1);
+      Building_All.remove(Building_All.children[k]); //destroy building
+      Model.remove(Model.children[i]);
+    }
+  }//end collision check 
+}
 function addModelToScene(geometry,materials)
 {
   //var material=new THREE.MeshFaceMaterial(materials);
@@ -350,7 +344,7 @@ function update ()
       }
       else
       {
-        camera.rotation.y+=1;
+        camera.rotation.z+=0.001;
       }
       //zooming=false;
     }
