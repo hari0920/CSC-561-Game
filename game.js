@@ -1,7 +1,7 @@
 //Final Missile Command Game with Three.js
 var zooming = true;
 THREE.Cache.enabled = true;
-var Number_of_Missiles=1;
+var Number_of_Missiles=9;
 current_position = new THREE.Vector3();
 Building_position =[];
 var Anti_Missiles = new THREE.Object3D();
@@ -378,6 +378,14 @@ function MoveMissile()
   }//end for every missile
 }//end move missile
 
+function removeAntiMissile(k,i)
+{
+  if (k == 0) { AntiModel_left.remove(AntiModel_left.children[j]); }
+  if (k == 1) { AntiModel_center.remove(AntiModel_center.children[j]); }
+  if (k == 2) { AntiModel_right.remove(AntiModel_right.children[j]); }
+  anti_target_array[k].splice(i, 1);
+  missiles_launched[k]--;
+}
 function MoveAntiMissile()
 {
   for(k=0;k<missiles_launched.length;k++) //for every battery
@@ -466,7 +474,7 @@ function LaunchAntiMissile(keypress,mousepos)
   //workflow is as follows.for each missile, move it towards mouse, check for collision with missile.
   if(keypress==65) //left missile battery selected
   {
-    if(ammo_array[0]-->=0) // it has missiles left
+    if(--ammo_array[0]>=0) // it has missiles left
     {
       //move towards target
       current_position = AntiModel_left.children[missiles_launched[0]].position;
@@ -491,7 +499,7 @@ function LaunchAntiMissile(keypress,mousepos)
   }
   if (keypress == 83) //left missile battery selected
   {
-    if (ammo_array[1]-- >= 0) // it has missiles left
+    if (--ammo_array[1] >= 0) // it has missiles left
     {
       //move towards target
       current_position = AntiModel_center.children[missiles_launched[1]].position;
@@ -514,7 +522,7 @@ function LaunchAntiMissile(keypress,mousepos)
   }
   if (keypress == 68) //left missile battery selected
   {
-    if (ammo_array[2]-- >= 0) // it has missiles left
+    if (--ammo_array[2] >= 0) // it has missiles left
     {
       //move towards target
       current_position = AntiModel_right.children[missiles_launched[2]].position;
@@ -574,18 +582,36 @@ function checkCollisionBuilding(current_position)
     }
   }//end collision check 
 }
+var position_of_antimissile=new THREE.Vector3();
+var position_of_missile=new THREE.Vector3();
 function checkCollisionMissiles()
 {
   for (i = 0; i < Model.children.length; i++) //for every incoming missile
   {
-    var position_of_missile=Model.children[i].position;
+    position_of_missile=Model.children[i].position;
     if(position_of_missile.y>500)
     {
       continue;
     }
     else //they are on screen
     {
-
+      //compare with launched missiles from each battery
+      for(k=0;k<missiles_launched.length;k++)
+      {  
+        for(j=0;j< missiles_launched[k];j++)
+        {
+          if (k == 0) { position_of_antimissile = AntiModel_left.children[j].position;}
+          if (k == 1) { position_of_antimissile = AntiModel_center.children[j].position; }
+          if (k == 2) { position_of_antimissile = AntiModel_right.children[j].position; }
+          //now we have the position of the missile and the anti-missile
+          if(position_of_missile.distanceTo(position_of_antimissile)<50)
+          {
+             console.log("Collision of Missiles!");      
+             Model.remove(Model.children[i]); //remove the missile
+             removeAntiMissile(k,j); //remove the ABM
+          }
+        }
+      }
     }
   }
 }
@@ -626,7 +652,7 @@ function onDocumentMouseDown(event)
 {
   console.log("Mouse Clicked");
   //MoveAntiMissile(); //Move Anti Missile
-  Detonate();
+  //Detonate();
 }
 function onDocumentMouseMove(event) {
   //https://threejs.org/docs/#api/core/Raycaster
@@ -697,7 +723,8 @@ function update ()
       {
         MoveMissile();
         MoveAntiMissile();
-        RaycasterUpdate();
+        checkCollisionMissiles();
+        //RaycasterUpdate();
         //console.log(Building_All);
         //Model.position.y-=1;
       }
