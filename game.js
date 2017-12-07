@@ -1,7 +1,7 @@
 //Final Missile Command Game with Three.js
 var zooming = true;
 THREE.Cache.enabled = true;
-var Number_of_Missiles=100;
+var Number_of_Missiles=1;
 current_position = new THREE.Vector3();
 Building_position =[];
 var Anti_Missiles = new THREE.Object3D();
@@ -10,6 +10,10 @@ var ammo=21;
 var level =1;
 var Buildings_Destroyed=0;
 var game_over=false;
+var anti_target_array = [];
+anti_target_array[0]=[];
+anti_target_array[1]=[];
+anti_target_array[2]=[];
 // Set the scene size.
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
@@ -41,6 +45,7 @@ scene.add(camera);
 //Raycaster
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
+var mousepos= new THREE.Vector2();
 // Start the renderer.
 renderer.setSize(WIDTH, HEIGHT);
 
@@ -104,6 +109,15 @@ const RADIUS = 10;
 const SEGMENTS = 32;
 const RINGS = 32;
 
+const sphere = new THREE.Mesh(
+
+  new THREE.SphereGeometry(
+    RADIUS,
+    SEGMENTS,
+    RINGS),
+
+  sphereMaterial);
+
 // Create a new mesh with
 // sphere geometry - we will cover
 // the sphereMaterial next!
@@ -164,6 +178,14 @@ m.load("missile\\AVMT300\\AVMT300.mtl",function(materials)
         //var target= Math.random()*5;
         clonedMissile.position.set(50 * position, 75 * i, 0);
         clonedMissile.rotateZ(Math.PI / 2);
+        clonedMissile.traverse(function (child) 
+        {
+          if (child instanceof THREE.Mesh) {
+            child.geometry.computeBoundingBox();
+            //var bbox=child.geometry.boundingBox;
+          }
+        });
+
         Model.add(clonedMissile);
         //scene.add(clonedMissile);
       }
@@ -241,6 +263,7 @@ var clonedAntiMissile = new THREE.Object3D();
 var AntiModel_left = new THREE.Object3D();
 var AntiModel_center = new THREE.Object3D();
 var AntiModel_right = new THREE.Object3D();
+var AntiMissile_initial_position=[];
 m.load("hellfire\\agm-114HellFire\\Files\\AGM-114HellFire.mtl", function (materials) {
   materials.preload();
   var l = new THREE.OBJLoader();
@@ -257,7 +280,9 @@ m.load("hellfire\\agm-114HellFire\\Files\\AGM-114HellFire.mtl", function (materi
         clonedAntiMissile.position.y = -75;
         clonedAntiMissile.position.z = 0;
         ammo_array[(i%3)]+=1;
-        console.log(clonedAntiMissile.position);
+        anti_target_array[(i%3)].push([0,0,0]);
+        //console.log(clonedAntiMissile.position);
+        AntiMissile_initial_position[(i%3)]=([clonedAntiMissile.position.x,-75,0]);
         clonedAntiMissile.rotateY(Math.PI);
         clonedAntiMissile.rotateX(-Math.PI/2);
         if((i%3)==0)
@@ -279,18 +304,41 @@ var direction =new THREE.Vector3();
 var destination = new THREE.Vector3();
 var speed = Math.random() * level * 0.01;
 var Antidestination=new THREE.Vector3();
+var empty=[0,0,0];
 function UpdateTarget(i) {
   //return (build[Math.floor(Math.random() * 2)]);
   return Math.floor(Math.random() * (Building_position.length)); //random 0 to 5
   
 }
-function UpdateAntiTarget(i)
+
+function UpdateAntiTarget(i,missile_launch_number,mousepos)
 {
-  //z=0 y= 300, x can be random 
-  Antidestination.x = Math.min(i%5,Math.random()*(5+5)-5);
-  Antidestination.y = 300;
-  Antidestination.z =  0;
-  return Antidestination;
+  //i is 0,1 or 2 based on the battery
+  //missile_launch_number is from 0 to ammo/3, missile within battery
+  var battery_targets=anti_target_array[i]; //targets for the battery
+  var equal=battery_targets[missile_launch_number].every(function (v, j) { return v === empty[j]})
+  if(equal) //empty
+  {
+    battery_targets[missile_launch_number][0] = mousepos.x;
+    battery_targets[missile_launch_number][1] = mousepos.y;
+    battery_targets[missile_launch_number][2] = 0;
+    Antidestination.x = mousepos.x;
+    Antidestination.y = mousepos.y;
+    Antidestination.z = 0;
+    return Antidestination;
+  }
+  else //already has value
+  {
+    Antidestination.x = battery_targets[missile_launch_number][0];
+    Antidestination.y = battery_targets[missile_launch_number][1];
+    Antidestination.z = 0;
+    return Antidestination; 
+  //Antidestination.x = Math.max((i%5),Math.random()*(5+5)-5);
+  //Antidestination.y = 300;
+  //Antidestination.z =  0;
+  //return Antidestination;
+  
+  }
 }
 function MoveMissile()
 {
@@ -335,16 +383,25 @@ function MoveAntiMissile()
   for(k=0;k<missiles_launched.length;k++) //for every battery
   {
     for (i = 0; i < missiles_launched[k]; i++)//for every missile of that battery, launched
-    {
+    { //i range will be between 0 and ammo/3.
       if(k==0)//left
       {//move towards target
       current_position = AntiModel_left.children[i].position;
       //calculate the direction vector and move along it.
-      var j = UpdateAntiTarget(i); //returns Target for the missile 
+      var j = UpdateAntiTarget(0,i,mousepos); //returns Target for the missile 
+      if (current_position.distanceTo(j) < 50) //check for detonation
+        {
+          AntiModel_left.remove(AntiModel_left.children[i]);
+          anti_target_array[0].splice(i, 1);
+          missiles_launched[k]--;
+        //explosion(current_position);
+          return;
+        }
+
       //if (current_position.y > Building_position[j].y) {
       destination = j.clone();
       direction = destination.sub(current_position);
-      direction.multiplyScalar(speed);
+      direction.multiplyScalar(speed*1.5);
       //console.log(direction);
       AntiModel_left.children[i].position.x += direction.x;
       AntiModel_left.children[i].position.y += direction.y;
@@ -355,11 +412,20 @@ function MoveAntiMissile()
         //move towards target
         current_position = AntiModel_center.children[i].position;
         //calculate the direction vector and move along it.
-        var j = UpdateAntiTarget(i); //returns Target for the missile 
+        var j = UpdateAntiTarget(1,i,mousepos); //returns Target for the missile 
         //if (current_position.y > Building_position[j].y) {
+        if (current_position.distanceTo(j) < 50) //check for detonation
+        {
+          AntiModel_center.remove(AntiModel_center.children[i]);
+          anti_target_array[1].splice(i, 1);
+          missiles_launched[k]--;
+          //explosion(j);
+          return;
+        }
+
         destination = j.clone();
         direction = destination.sub(current_position);
-        direction.multiplyScalar(speed);
+        direction.multiplyScalar(speed*1.5);
         //console.log(direction);
         AntiModel_center.children[i].position.x += direction.x;
         AntiModel_center.children[i].position.y += direction.y;
@@ -371,11 +437,20 @@ function MoveAntiMissile()
         //move towards target
         current_position = AntiModel_right.children[i].position;
         //calculate the direction vector and move along it.
-        var j = UpdateAntiTarget(i); //returns Target for the missile 
+        var j = UpdateAntiTarget(2,i,mousepos); //returns Target for the missile 
+        if (current_position.distanceTo(j) < 50) //check for detonation
+        {
+          AntiModel_right.remove(AntiModel_right.children[i]);
+          anti_target_array[2].splice(i, 1);
+          missiles_launched[k]--;
+          //explosion(j);
+          return;
+        }
+
         //if (current_position.y > Building_position[j].y) {
         destination = j.clone();
         direction = destination.sub(current_position);
-        direction.multiplyScalar(speed);
+        direction.multiplyScalar(speed*1.5);
         //console.log(direction);
         AntiModel_right.children[i].position.x += direction.x;
         AntiModel_right.children[i].position.y += direction.y;
@@ -385,17 +460,20 @@ function MoveAntiMissile()
   }//end for battery
 }//end move anti missile
 var missiles_launched=[0,0,0];
-function LaunchAntiMissile(keypress) 
+
+function LaunchAntiMissile(keypress,mousepos) 
 {
   //workflow is as follows.for each missile, move it towards mouse, check for collision with missile.
   if(keypress==65) //left missile battery selected
   {
-    if(ammo_array[0]--!=0) // it has missiles left
+    if(ammo_array[0]-->=0) // it has missiles left
     {
       //move towards target
       current_position = AntiModel_left.children[missiles_launched[0]].position;
       //calculate the direction vector and move along it.
-      var j = UpdateAntiTarget(missiles_launched[0]); //returns Target for the missile 
+      var j = UpdateAntiTarget(0,missiles_launched[0],mousepos); //returns Target for the missile 
+
+
       //if (current_position.y > Building_position[j].y) {
       destination = j.clone();
       direction = destination.sub(current_position);
@@ -405,7 +483,7 @@ function LaunchAntiMissile(keypress)
       AntiModel_left.children[missiles_launched[0]].position.y += direction.y;
       AntiModel_left.children[missiles_launched[0]].position.z += direction.z;
       missiles_launched[0]+=1;
-      ammo_array[0]-=1;
+      //ammo_array[0]-=1;
       //check collision too
       //current_position = Model.children[i].position;
       //checkCollisionMissile(current_position);
@@ -413,22 +491,22 @@ function LaunchAntiMissile(keypress)
   }
   if (keypress == 83) //left missile battery selected
   {
-    if (ammo_array[1]-- != 0) // it has missiles left
+    if (ammo_array[1]-- >= 0) // it has missiles left
     {
       //move towards target
-      current_position = AntiModel_left.children[missiles_launched[1]].position;
+      current_position = AntiModel_center.children[missiles_launched[1]].position;
       //calculate the direction vector and move along it.
-      var j = UpdateAntiTarget(missiles_launched[1]); //returns Target for the missile 
+      var j = UpdateAntiTarget(1,missiles_launched[1],mousepos); //returns Target for the missile 
       //if (current_position.y > Building_position[j].y) {
       destination = j.clone();
       direction = destination.sub(current_position);
       direction.multiplyScalar(speed);
       //console.log(direction);
-      AntiModel_left.children[missiles_launched[1]].position.x += direction.x;
-      AntiModel_left.children[missiles_launched[1]].position.y += direction.y;
-      AntiModel_left.children[missiles_launched[1]].position.z += direction.z;
+      AntiModel_center.children[missiles_launched[1]].position.x += direction.x;
+      AntiModel_center.children[missiles_launched[1]].position.y += direction.y;
+      AntiModel_center.children[missiles_launched[1]].position.z += direction.z;
       missiles_launched[1] += 1;
-      ammo_array[1] -= 1;
+      //ammo_array[1] -= 1;
       //check collision too
       //current_position = Model.children[i].position;
       //checkCollisionMissile(current_position);
@@ -436,22 +514,22 @@ function LaunchAntiMissile(keypress)
   }
   if (keypress == 68) //left missile battery selected
   {
-    if (ammo_array[2]-- != 0) // it has missiles left
+    if (ammo_array[2]-- >= 0) // it has missiles left
     {
       //move towards target
-      current_position = AntiModel_left.children[missiles_launched[2]].position;
+      current_position = AntiModel_right.children[missiles_launched[2]].position;
       //calculate the direction vector and move along it.
-      var j = UpdateAntiTarget(missiles_launched[2]); //returns Target for the missile 
+      var j = UpdateAntiTarget(2,missiles_launched[2],mousepos); //returns Target for the missile 
       //if (current_position.y > Building_position[j].y) {
       destination = j.clone();
       direction = destination.sub(current_position);
       direction.multiplyScalar(speed);
       //console.log(direction);
-      AntiModel_left.children[missiles_launched[2]].position.x += direction.x;
-      AntiModel_left.children[missiles_launched[2]].position.y += direction.y;
-      AntiModel_left.children[missiles_launched[2]].position.z += direction.z;
+      AntiModel_right.children[missiles_launched[2]].position.x += direction.x;
+      AntiModel_right.children[missiles_launched[2]].position.y += direction.y;
+      AntiModel_right.children[missiles_launched[2]].position.z += direction.z;
       missiles_launched[2] += 1;
-      ammo_array[2] -= 1;
+      //ammo_array[2] -= 1;
       //check collision too
       //current_position = Model.children[i].position;
       //checkCollisionMissile(current_position);
@@ -496,8 +574,33 @@ function checkCollisionBuilding(current_position)
     }
   }//end collision check 
 }
-function addModelToScene(geometry,materials)
+function checkCollisionMissiles()
 {
+  for (i = 0; i < Model.children.length; i++) //for every incoming missile
+  {
+    var position_of_missile=Model.children[i].position;
+    if(position_of_missile.y>500)
+    {
+      continue;
+    }
+    else //they are on screen
+    {
+
+    }
+  }
+}
+function explosion(current_position)
+{
+  var sphere = new THREE.Mesh(
+
+    new THREE.SphereGeometry(
+      RADIUS,
+      SEGMENTS,
+      RINGS),
+
+    sphereMaterial);
+    sphere.position=current_position;
+    scene.add(sphere);
   //var material=new THREE.MeshFaceMaterial(materials);
   //var geometry = new THREE.BoxGeometry( 1, 1, 1 );
   //console.log(geometry,materials);
@@ -510,6 +613,8 @@ function addModelToScene(geometry,materials)
  document.addEventListener('mousemove', onDocumentMouseMove, false); //for mouse move
  document.addEventListener('resize', onWindowResize, false);
  document.addEventListener("keydown",onDocumentKeyDown,false);
+ //
+ //document.getElementsByTagName('container')[0].innerHTML= score;
  function onWindowResize(event)
  {
    console.log("Resize");
@@ -530,7 +635,17 @@ function onDocumentMouseMove(event) {
 
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  var vector = new THREE.Vector3(mouse.x, mouse.y, 0);
+  vector.unproject(camera);
+  var dir = vector.sub(camera.position).normalize();
+  var distance = -camera.position.z / dir.z;
+  var pos = camera.position.clone().add(dir.multiplyScalar(distance));
+  mousepos.x = pos.x;
+  mousepos.y = pos.y;
+
   //console.log(mouse);
+  
+ // console.log(mousepos);
 
 }
 function onDocumentKeyDown(event)
@@ -539,13 +654,13 @@ function onDocumentKeyDown(event)
   if(keycode==65)
   {
     console.log(keycode);
-    LaunchAntiMissile(65)
+    LaunchAntiMissile(65,mousepos);
   }
   if (keycode == 83) {
-    LaunchAntiMissile(83)
+    LaunchAntiMissile(83,mousepos);
   }
   if (keycode == 68) {
-    LaunchAntiMissile(68)
+    LaunchAntiMissile(68,mousepos);
   }
 }
 
