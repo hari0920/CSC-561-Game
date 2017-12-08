@@ -1,20 +1,32 @@
 //Final Missile Command Game with Three.js
-var zooming = true;
+var level = 1;
 THREE.Cache.enabled = true;
-var Number_of_Missiles=9;
+var score=0;
+var Buildings_Destroyed = 0;
+var game_over = false;
+//var zooming = true;
+var Number_of_Missiles=9*level;
 current_position = new THREE.Vector3();
 Building_position =[];
 var Anti_Missiles = new THREE.Object3D();
-var score=0;
-var ammo=21;
-var level =1;
-var Buildings_Destroyed=0;
-var game_over=false;
+var ammo=9*level;
 var anti_target_array = [];
 anti_target_array[0]=[];
 anti_target_array[1]=[];
 anti_target_array[2]=[];
 const threshold_missile=25;
+
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+var mousepos = new THREE.Vector2();
+var Building_All = new THREE.Object3D();
+var ammo_array = [0, 0, 0];
+var clonedAntiMissile = new THREE.Object3D();
+var AntiModel_left = new THREE.Object3D();
+var AntiModel_center = new THREE.Object3D();
+var AntiModel_right = new THREE.Object3D();
+var AntiMissile_initial_position = [];
+///////////////////////////////////////
 // Set the scene size.
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
@@ -54,7 +66,8 @@ var sound1 = new THREE.Audio(listener);
 var audioLoader = new THREE.AudioLoader();
 
 //Load a sound and set it as the Audio object's buffer
-audioLoader.load('01 Sandstorm.mp3', function (buffer) {
+song = ['01 Sandstorm.mp3', '06 Kashmir.mp3']
+audioLoader.load(song[1], function (buffer) {
   sound.setBuffer(buffer);
   sound.setLoop(true);
   sound.setVolume(0.5);
@@ -70,15 +83,15 @@ audioLoader.load('explosion.mp3', function (buffer) {
   //sound1.play();
 });
 //Raycaster
-var raycaster = new THREE.Raycaster();
-var mouse = new THREE.Vector2();
-var mousepos= new THREE.Vector2();
+
 // Start the renderer.
 renderer.setSize(WIDTH, HEIGHT);
 
 // Attach the renderer-supplied
 // DOM element.
 container.appendChild(renderer.domElement);
+
+
 //TERRAIN
 //create and add a Plane
 var planeTexture=new THREE.TextureLoader().load('building.jpg');
@@ -134,65 +147,7 @@ pointLight.position.z = 20;
 
 // add to the scene
 scene.add(pointLight);
-/*
-// create the sphere's material
-const sphereMaterial =
-  new THREE.MeshLambertMaterial({
-    color: 0xCC0000
-  });
 
-// Set up the sphere vars
-const RADIUS = 10;
-const SEGMENTS = 32;
-const RINGS = 32;
-
-const sphere = new THREE.Mesh(
-
-  new THREE.SphereGeometry(
-    RADIUS,
-    SEGMENTS,
-    RINGS),
-
-  sphereMaterial);
-*/
-// Create a new mesh with
-// sphere geometry - we will cover
-// the sphereMaterial next!
-
-
-//Anti-Ballistic Missiles
-/*
-function AddAntiMissile(event)
-{
-  for(i=0;i<ammo;i++)
-  {
-  // Move the Sphere back in Z so we
-  // can see it.
-  //sphere.position.x=((mouse.x+1)/2) *window.innerWidth;
-//  sphere.position.y=((mouse.y - 1) / 2) * window.innerHeight*-1;
-// from https://stackoverflow.com/questions/36033879/three-js-object-follow-mouse-position
- var vector = new THREE.Vector3(mouse.x, mouse.y, 0);
- vector.unproject(camera);
- var dir = vector.sub(camera.position).normalize();
- var distance = -camera.position.z / dir.z;
- var pos = camera.position.clone().add(dir.multiplyScalar(distance));
-    const sphere = new THREE.Mesh(
-
-      new THREE.SphereGeometry(
-        RADIUS,
-        SEGMENTS,
-        RINGS),
-
-      sphereMaterial);
-    pos.x -= i;
-    pos.y -= i;
-    pos.z -= i;
- sphere.position.copy(pos); // this is at mouse position.
-  Anti_Missiles.add(sphere);
-  }
-  scene.add(Anti_Missiles);
-}
-*/
 //Testing Model Load for Missile
 //var loader=new THREE.JSONLoader();
 var m=new THREE.MTLLoader();
@@ -258,7 +213,7 @@ m.load("title.mtl", function (materials)
 }
 );
 
-var Building_All = new THREE.Object3D();
+
  for (var i=-2;i<3;i++)
  {
    if(i%2==0)
@@ -295,12 +250,7 @@ Building_All.add(Building);
 scene.add(Building_All);
 
 //Anti-Missile
-var ammo_array=[0,0,0];
-var clonedAntiMissile = new THREE.Object3D();
-var AntiModel_left = new THREE.Object3D();
-var AntiModel_center = new THREE.Object3D();
-var AntiModel_right = new THREE.Object3D();
-var AntiMissile_initial_position=[];
+
 m.load("hellfire\\agm-114HellFire\\Files\\AGM-114HellFire.mtl", function (materials) {
   materials.preload();
   var l = new THREE.OBJLoader();
@@ -613,9 +563,11 @@ function checkCollisionBuilding(current_position)
         console.log("GAME OVER!!");
         game_over = true;
       }
+      explosion(Building_position[k]);
       Building_position.splice(k, 1);
       Building_All.remove(Building_All.children[k]); //destroy building
-      Model.remove(Model.children[i]);
+      Model.remove(Model.children[i]); //destroy missile
+      score-=500;
     }
   }//end collision check 
 }
@@ -626,7 +578,11 @@ function checkCollisionMissiles()
   for (i = 0; i < Model.children.length; i++) //for every incoming missile
   {
     position_of_missile=Model.children[i].position;
-    if(position_of_missile.y>500)
+    if(position_of_missile.y<=-100) //below plane
+    {
+      Model.remove(Model.children[i]);
+    }
+    else if(position_of_missile.y>500)
     {
       continue;
     }
@@ -674,7 +630,7 @@ function explosion(current_position)
  document.addEventListener('resize', onWindowResize, false);
  document.addEventListener("keydown",onDocumentKeyDown,false);
  //
- //document.getElementsByTagName('container')[0].innerHTML= score;
+ 
  function onWindowResize(event)
  {
    console.log("Resize");
@@ -743,8 +699,13 @@ function RaycasterUpdate()
 }
   
 var clock=new THREE.Clock();
+
 function update ()
 {
+  document.getElementById("info").innerHTML = "Score: "+ score
+  + "Ammo Left: " + ammo_array[0]
+  + "Ammo Center: " + ammo_array[1]
+  + "Ammo Right: " + ammo_array[2];
   if(camera.position.z<600)
     {
       camera.position.z+=8;
@@ -760,6 +721,10 @@ function update ()
         MoveMissile();
         MoveAntiMissile();
         checkCollisionMissiles();
+        if(Model.children.length==0)
+        {
+          level+=5;
+        }
         //RaycasterUpdate();
         //console.log(Building_All);
         //Model.position.y-=1;
@@ -767,7 +732,7 @@ function update ()
       else
       {
         scene.add(Gplane);
-        camera.rotation.z+=0.001;
+        camera.rotation.z+=0.002;
       }
       //zooming=false;
     }
