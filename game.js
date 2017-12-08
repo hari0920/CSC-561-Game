@@ -14,6 +14,7 @@ var anti_target_array = [];
 anti_target_array[0]=[];
 anti_target_array[1]=[];
 anti_target_array[2]=[];
+const threshold_missile=25;
 // Set the scene size.
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
@@ -42,6 +43,32 @@ const scene = new THREE.Scene();
 
 // Add the camera to the scene.
 scene.add(camera);
+//SOUND
+//Create an AudioListener and add it to the camera
+var listener = new THREE.AudioListener();
+camera.add(listener);
+
+// create a global audio source
+var sound = new THREE.Audio(listener);
+var sound1 = new THREE.Audio(listener);
+var audioLoader = new THREE.AudioLoader();
+
+//Load a sound and set it as the Audio object's buffer
+audioLoader.load('01 Sandstorm.mp3', function (buffer) {
+  sound.setBuffer(buffer);
+  sound.setLoop(true);
+  sound.setVolume(0.5);
+  sound.play();
+});
+//var explosion_sound;
+//Load a sound and set it as the Audio object's buffer
+audioLoader.load('explosion.mp3', function (buffer) {
+  //explosion_sound=buffer;
+  sound1.setBuffer(buffer);
+  sound1.setLoop(false);
+  sound1.setVolume(1.0);
+  //sound1.play();
+});
 //Raycaster
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
@@ -82,14 +109,15 @@ Gplane.position.z = 50;
 //light
 var dirLight = new THREE.DirectionalLight( 0xffffff, 0.125 );
 				dirLight.position.set( 0, 0, 1 ).normalize();
-				scene.add( dirLight );
+        scene.add( dirLight );
+
 // create a point light
-for(var i=-2;i<2;i++)
+for(var i=-1;i<1;i++)
 {
 const pointLight = new THREE.PointLight(0xFFFFFF);
 
 // set its position
-pointLight.position.x = i*150;
+pointLight.position.x = i*200;
 pointLight.position.y = 100;
 pointLight.position.z = 120;
 
@@ -97,7 +125,16 @@ pointLight.position.z = 120;
 scene.add(pointLight);
 
 }
+const pointLight = new THREE.PointLight(0xFFFFFF);
 
+// set its position
+pointLight.position.x = 0;
+pointLight.position.y = 300;
+pointLight.position.z = 20;
+
+// add to the scene
+scene.add(pointLight);
+/*
 // create the sphere's material
 const sphereMaterial =
   new THREE.MeshLambertMaterial({
@@ -117,7 +154,7 @@ const sphere = new THREE.Mesh(
     RINGS),
 
   sphereMaterial);
-
+*/
 // Create a new mesh with
 // sphere geometry - we will cover
 // the sphereMaterial next!
@@ -365,12 +402,12 @@ function MoveMissile()
       }
       else //off screen
       {
-        Model.children[i].position.y -= 1; // just move down 
+        Model.children[i].position.y -= 0.5; // just move down 
       }
     }
     else //off screen
     {
-      Model.children[i].position.y -= 1; // just move down 
+      Model.children[i].position.y -= 0.5; // just move down 
     }
   //check collision too
   current_position = Model.children[i].position;
@@ -397,19 +434,19 @@ function MoveAntiMissile()
       current_position = AntiModel_left.children[i].position;
       //calculate the direction vector and move along it.
       var j = UpdateAntiTarget(0,i,mousepos); //returns Target for the missile 
-      if (current_position.distanceTo(j) < 50) //check for detonation
+      if (current_position.distanceTo(j) <5) //check for detonation
         {
           AntiModel_left.remove(AntiModel_left.children[i]);
           anti_target_array[0].splice(i, 1);
           missiles_launched[k]--;
-        //explosion(current_position);
+          explosion(current_position);
           return;
         }
 
       //if (current_position.y > Building_position[j].y) {
       destination = j.clone();
       direction = destination.sub(current_position);
-      direction.multiplyScalar(speed*1.5);
+      direction.multiplyScalar(speed*2);
       //console.log(direction);
       AntiModel_left.children[i].position.x += direction.x;
       AntiModel_left.children[i].position.y += direction.y;
@@ -422,18 +459,18 @@ function MoveAntiMissile()
         //calculate the direction vector and move along it.
         var j = UpdateAntiTarget(1,i,mousepos); //returns Target for the missile 
         //if (current_position.y > Building_position[j].y) {
-        if (current_position.distanceTo(j) < 50) //check for detonation
+        if (current_position.distanceTo(j) < 5) //check for detonation
         {
           AntiModel_center.remove(AntiModel_center.children[i]);
           anti_target_array[1].splice(i, 1);
           missiles_launched[k]--;
-          //explosion(j);
+          explosion(current_position);
           return;
         }
 
         destination = j.clone();
         direction = destination.sub(current_position);
-        direction.multiplyScalar(speed*1.5);
+        direction.multiplyScalar(speed*2);
         //console.log(direction);
         AntiModel_center.children[i].position.x += direction.x;
         AntiModel_center.children[i].position.y += direction.y;
@@ -446,19 +483,19 @@ function MoveAntiMissile()
         current_position = AntiModel_right.children[i].position;
         //calculate the direction vector and move along it.
         var j = UpdateAntiTarget(2,i,mousepos); //returns Target for the missile 
-        if (current_position.distanceTo(j) < 50) //check for detonation
+        if (current_position.distanceTo(j) < 5) //check for detonation
         {
           AntiModel_right.remove(AntiModel_right.children[i]);
           anti_target_array[2].splice(i, 1);
           missiles_launched[k]--;
-          //explosion(j);
+          explosion(current_position);
           return;
         }
 
         //if (current_position.y > Building_position[j].y) {
         destination = j.clone();
         direction = destination.sub(current_position);
-        direction.multiplyScalar(speed*1.5);
+        direction.multiplyScalar(speed*2);
         //console.log(direction);
         AntiModel_right.children[i].position.x += direction.x;
         AntiModel_right.children[i].position.y += direction.y;
@@ -485,7 +522,7 @@ function LaunchAntiMissile(keypress,mousepos)
       //if (current_position.y > Building_position[j].y) {
       destination = j.clone();
       direction = destination.sub(current_position);
-      direction.multiplyScalar(speed);
+      direction.multiplyScalar(speed*2);
       //console.log(direction);
       AntiModel_left.children[missiles_launched[0]].position.x += direction.x;
       AntiModel_left.children[missiles_launched[0]].position.y += direction.y;
@@ -508,7 +545,7 @@ function LaunchAntiMissile(keypress,mousepos)
       //if (current_position.y > Building_position[j].y) {
       destination = j.clone();
       direction = destination.sub(current_position);
-      direction.multiplyScalar(speed);
+      direction.multiplyScalar(speed*2);
       //console.log(direction);
       AntiModel_center.children[missiles_launched[1]].position.x += direction.x;
       AntiModel_center.children[missiles_launched[1]].position.y += direction.y;
@@ -531,7 +568,7 @@ function LaunchAntiMissile(keypress,mousepos)
       //if (current_position.y > Building_position[j].y) {
       destination = j.clone();
       direction = destination.sub(current_position);
-      direction.multiplyScalar(speed);
+      direction.multiplyScalar(speed*2);
       //console.log(direction);
       AntiModel_right.children[missiles_launched[2]].position.x += direction.x;
       AntiModel_right.children[missiles_launched[2]].position.y += direction.y;
@@ -609,30 +646,27 @@ function checkCollisionMissiles()
              console.log("Collision of Missiles!");      
              Model.remove(Model.children[i]); //remove the missile
              removeAntiMissile(k,j); //remove the ABM
+             explosion(position_of_antimissile);
+             score+=100;
+             console.log(score);
           }
         }
       }
     }
   }
 }
+var spheres=[];
 function explosion(current_position)
 {
-  var sphere = new THREE.Mesh(
-
-    new THREE.SphereGeometry(
-      RADIUS,
-      SEGMENTS,
-      RINGS),
-
-    sphereMaterial);
-    sphere.position=current_position;
-    scene.add(sphere);
-  //var material=new THREE.MeshFaceMaterial(materials);
-  //var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-  //console.log(geometry,materials);
-  //var Model = new THREE.Mesh( geometry, materials );
-  //Model.scale.set(10,10,10);
-//  scene.add( Model );
+  sound1.play();
+  var geometry = new THREE.SphereGeometry(25, 32, 32);
+  var material = new THREE.MeshLambertMaterial({ color: 0xFFFF00 });
+  var explosion = new THREE.Mesh(geometry, material);
+  explosion.position.copy(current_position);
+  spheres=explosion;
+  scene.add(spheres);
+  
+  
 }
 
  document.addEventListener('mousedown', onDocumentMouseDown, false); //for mouse click
@@ -699,7 +733,8 @@ function RaycasterUpdate()
   // calculate objects intersecting the picking ray
   var intersects = raycaster.intersectObjects(Building_All.children);
   //console.log(intersects);
-  for (var i = 0; i < intersects.length; i++) {
+  for (var i = 0; i < intersects.length; i++) 
+  {
 
     intersects[i].object.material.color.set(0xff0000);
 
@@ -707,7 +742,7 @@ function RaycasterUpdate()
 
 }
   
-
+var clock=new THREE.Clock();
 function update ()
 {
   if(camera.position.z<600)
@@ -721,6 +756,7 @@ function update ()
       //scene.remove(Text);
       if(!game_over)
       {
+        scene.remove(spheres);
         MoveMissile();
         MoveAntiMissile();
         checkCollisionMissiles();
