@@ -6,11 +6,11 @@ var Buildings_Destroyed = 0;
 var game_over = false;
 //var zooming = true;
 /////////////////////////////
-var Number_of_Missiles=1*level;
+var Number_of_Missiles=12*level;
 current_position = new THREE.Vector3();
 Building_position =[];
 var Anti_Missiles = new THREE.Object3D();
-var ammo=9*level;
+var ammo=12*level;
 var anti_target_array = [];
 anti_target_array[0]=[];
 anti_target_array[1]=[];
