@@ -841,12 +841,12 @@ function update ()
         if(Model.children.length==0)
         {
           level+=1;
-          scene.remove(Model);
-          scene.remove(Building_All);
-          scene.remove(AntiModel_left);
-          scene.remove(AntiModel_center);
-          scene.remove(AntiModel_right);
-          init();
+          //scene.remove(Model);
+          //scene.remove(Building_All);
+          //scene.remove(AntiModel_left);
+          //scene.remove(AntiModel_center);
+          //scene.remove(AntiModel_right);
+          //init();
         }
         //RaycasterUpdate();
         //console.log(Building_All);
