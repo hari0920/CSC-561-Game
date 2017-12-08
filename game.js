@@ -5,7 +5,8 @@ var score=0;
 var Buildings_Destroyed = 0;
 var game_over = false;
 //var zooming = true;
-var Number_of_Missiles=9*level;
+/////////////////////////////
+var Number_of_Missiles=1*level;
 current_position = new THREE.Vector3();
 Building_position =[];
 var Anti_Missiles = new THREE.Object3D();
@@ -15,7 +16,11 @@ anti_target_array[0]=[];
 anti_target_array[1]=[];
 anti_target_array[2]=[];
 const threshold_missile=25;
-
+var direction = new THREE.Vector3();
+var destination = new THREE.Vector3();
+var speed = Math.random() * level * 0.01;
+var Antidestination = new THREE.Vector3();
+var empty = [0, 0, 0];
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
 var mousepos = new THREE.Vector2();
@@ -91,7 +96,129 @@ renderer.setSize(WIDTH, HEIGHT);
 // DOM element.
 container.appendChild(renderer.domElement);
 
+function init()
+{
+  Number_of_Missiles = 9 * level;
+  //current_position = new THREE.Vector3();
+  Building_position = [];
+  //Anti_Missiles = new THREE.Object3D();
+  ammo = 9 * level;
+  anti_target_array = [];
+  anti_target_array[0] = [];
+  anti_target_array[1] = [];
+  anti_target_array[2] = [];
+  //const threshold_missile = 25;
+  //direction = new THREE.Vector3();
+  //destination = new THREE.Vector3();
+  speed = Math.random() * level * 0.01;
+  //Antidestination = new THREE.Vector3();
+  empty = [0, 0, 0];
+  //Building_All = new THREE.Object3D();
+  ammo_array = [0, 0, 0];
+  //clonedAntiMissile = new THREE.Object3D();
+  //AntiModel_left = new THREE.Object3D();
+  //AntiModel_center = new THREE.Object3D();
+  //AntiModel_right = new THREE.Object3D();
+  AntiMissile_initial_position = [];
 
+  //m = new THREE.MTLLoader();
+  //clonedMissile = new THREE.Object3D();
+  //Model = new THREE.Object3D();
+  m.load("missile\\AVMT300\\AVMT300.mtl", function (materials) {
+    materials.preload();
+   var l = new THREE.OBJLoader();
+    l.setMaterials(materials);
+    l.load("missile\\AVMT300\\AVMT300.obj",
+      function (obj) {
+        for (var i = 1; i < Number_of_Missiles + 1; i++) {
+
+          clonedMissile = obj.clone();
+          var position = Math.random() * (5 + 5) - 5;
+          //var target= Math.random()*5;
+          clonedMissile.position.set(50 * position, 75 * i, 0);
+          clonedMissile.rotateZ(Math.PI / 2);
+          Model.add(clonedMissile);
+          //scene.add(clonedMissile);
+        }
+        scene.add(Model);
+      }
+    );
+
+  });
+  //Building
+  for (var i = -2; i < 3; i++) {
+    if (i % 2 == 0) {
+      geometry = new THREE.BoxGeometry(50, 50, 50);
+      texture = new THREE.TextureLoader().load("missile-launcher.jpg");
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(1, 1);
+      material = new THREE.MeshBasicMaterial({
+        side: THREE.DoubleSide,
+        map: texture
+      });
+    }
+    else {
+      geometry = new THREE.BoxGeometry(50, 100, 50);
+      texture = new THREE.TextureLoader().load("house.jpg");
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(4, 4);
+      material = new THREE.MeshLambertMaterial({
+        side: THREE.DoubleSide,
+        map: texture
+      });
+    }
+
+    //var material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+    Building = new THREE.Mesh(geometry, material);
+    Building.position.set(i * 150, -100, 0);
+    Building_position.push(Building.position);
+    //console.log(Building.position)
+    Building_All.add(Building);
+  }
+  scene.add(Building_All);
+
+  //Anti-Missile
+
+  m.load("hellfire\\agm-114HellFire\\Files\\AGM-114HellFire.mtl", function (materials) {
+    materials.preload();
+    var l = new THREE.OBJLoader();
+    l.setMaterials(materials);
+    l.load("hellfire\\agm-114HellFire\\Files\\AGM-114HellFire.obj",
+      function (obj) {
+        for (var i = 1; i < ammo + 1; i++) {
+          clonedAntiMissile = obj.clone();
+          //var position = Math.random() * (5 + 5) - 5;
+          //var target= Math.random()*5;
+          clonedAntiMissile.scale.set(3, 3, 3);
+          clonedAntiMissile.position.x = Building_position[(i % 3) * 2].x + Math.floor(Math.random() * 10);
+          clonedAntiMissile.position.y = -75;
+          clonedAntiMissile.position.z = 0;
+          ammo_array[(i % 3)] += 1;
+          anti_target_array[(i % 3)].push([0, 0, 0]);
+          //console.log(clonedAntiMissile.position);
+          AntiMissile_initial_position[(i % 3)] = ([clonedAntiMissile.position.x, -75, 0]);
+          clonedAntiMissile.rotateY(Math.PI);
+          clonedAntiMissile.rotateX(-Math.PI / 2);
+          if ((i % 3) == 0)
+            AntiModel_left.add(clonedAntiMissile);
+          if ((i % 3) == 1)
+            AntiModel_center.add(clonedAntiMissile);
+          if ((i % 3) == 2)
+            AntiModel_right.add(clonedAntiMissile);
+          //scene.add(clonedMissile);
+        }
+        scene.add(AntiModel_left);
+        scene.add(AntiModel_center);
+        scene.add(AntiModel_right);
+      }
+    );
+
+  });
+
+
+}//end init
 //TERRAIN
 //create and add a Plane
 var planeTexture=new THREE.TextureLoader().load('building.jpg');
@@ -120,6 +247,7 @@ Gplane.position.z = 50;
 
 //https://stackoverflow.com/questions/29916886/three-js-add-plane-to-the-scene
 //light
+
 var dirLight = new THREE.DirectionalLight( 0xffffff, 0.125 );
 				dirLight.position.set( 0, 0, 1 ).normalize();
         scene.add( dirLight );
@@ -198,14 +326,6 @@ m.load("title.mtl", function (materials)
   l.load("title.obj",function (obj) 
   {
     Text = obj;
-    /*
-    var material = materials;
-    //material =new THREE.MeshLambertMaterial({color: 0xCC0000});
-    obj.traverse(function (child) {
-      if (child instanceof THREE.Mesh) {
-        child.material = materials;
-      }});
-      */
     obj.position.set(-150, 150, -10);
     scene.add(obj);
   }
@@ -213,7 +333,7 @@ m.load("title.mtl", function (materials)
 }
 );
 
-
+//Building
  for (var i=-2;i<3;i++)
  {
    if(i%2==0)
@@ -287,11 +407,8 @@ m.load("hellfire\\agm-114HellFire\\Files\\AGM-114HellFire.mtl", function (materi
   );
 
 });
-var direction =new THREE.Vector3();
-var destination = new THREE.Vector3();
-var speed = Math.random() * level * 0.01;
-var Antidestination=new THREE.Vector3();
-var empty=[0,0,0];
+
+
 function UpdateTarget(i) {
   //return (build[Math.floor(Math.random() * 2)]);
   return Math.floor(Math.random() * (Building_position.length)); //random 0 to 5
@@ -723,7 +840,13 @@ function update ()
         checkCollisionMissiles();
         if(Model.children.length==0)
         {
-          level+=5;
+          level+=1;
+          scene.remove(Model);
+          scene.remove(Building_All);
+          scene.remove(AntiModel_left);
+          scene.remove(AntiModel_center);
+          scene.remove(AntiModel_right);
+          init();
         }
         //RaycasterUpdate();
         //console.log(Building_All);
