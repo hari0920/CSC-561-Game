@@ -421,10 +421,11 @@ var l = new THREE.OBJLoader();
 l.load("hellfire\\agm-114HellFire\\Files\\AGM-114HellFire.obj", function (obj) 
 {
     ship = obj;
-    obj.position.set(0,150, 0);
+    obj.position.set(-300,150, 0);
     obj.scale.set(20,20,20);
+    //obj.rotateZ(Math.PI/2);
     //Model.add(ship);
-    //scene.add(obj);
+    //scene.add(ship);
   }
   );
 
@@ -769,6 +770,38 @@ function checkCollisionMissiles()
   }
 }
 
+function checkCollisionShip()
+{
+  position_of_missile = ship.position;
+  if (position_of_missile.y <= -100) //below plane
+  {
+    scene.remove(ship);
+  }
+  else if (position_of_missile.y > 500) {
+    return;
+  }
+  else //they are on screen
+  {
+    //compare with launched missiles from each battery
+     for (k = 0; k < missiles_launched.length; k++) {
+       for (j = 0; j < missiles_launched[k]; j++) {
+         if (k == 0) { position_of_antimissile = AntiModel_left.children[j].position; }
+         if (k == 1) { position_of_antimissile = AntiModel_center.children[j].position; }
+         if (k == 2) { position_of_antimissile = AntiModel_right.children[j].position; }
+         //now we have the position of the missile and the anti-missile
+         if (position_of_missile.distanceToSquared(position_of_antimissile) < 50 * 50) {
+           console.log("Collision of Ship!");
+           scene.remove(ship); //remove the missile
+           removeAntiMissile(k, j); //remove the ABM
+           explosion(position_of_antimissile);
+           score += 300;
+           bonus=false; //reset bonus
+           //console.log(score);
+          }
+        }
+      }
+    }
+}
 function explosion(current_position)
 {
   sound1.play();
@@ -869,6 +902,7 @@ stats.domElement.style.left = '50px';
 stats.domElement.style.top = '50px';
 
 document.body.appendChild(stats.dom);
+var bonus=false;
 function update ()
 {
   stats.begin();
@@ -878,7 +912,7 @@ function update ()
   + " Ammo Right: " + ammo_array[2];
   if(camera.position.z<600)
     {
-      camera.position.z+=7;
+      camera.position.z+=5;
                  
     }
     else
@@ -891,20 +925,27 @@ function update ()
         MoveMissile();
         MoveAntiMissile();
         checkCollisionMissiles();
-        if(score>0)
+        if((score>=400*level) && (bonus==false))
         {
-//Model.add(ship);
+          scene.add(ship);
+          bonus=true;
+        }
+        if(bonus==true)
+        {
+          ship.position.x += level*0.5;//Math.random() * (5 + 5) - 5;
+          //ship.position.y=level*0.5;
+          checkCollisionShip();
         }
         if(Model.children.length==0)
         {
-          //level+=1;
+          level+=1;
           scene.remove(Model);
-          //scene.remove(Building_All);
+          scene.remove(Building_All);
           scene.remove(AntiModel_left);
           scene.remove(AntiModel_center);
           scene.remove(AntiModel_right);
           init();
-          camera.position.z=300;
+          camera.position.z=200;
         }
         //RaycasterUpdate();
         //console.log(Building_All);
