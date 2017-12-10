@@ -107,6 +107,7 @@ var position_of_missile = new THREE.Vector3();
 function init()
 {
   Number_of_Missiles = 9 * level;
+  Buildings_Destroyed=0;
   //current_position = new THREE.Vector3();
   Building_position = [];
   //Anti_Missiles = new THREE.Object3D();
@@ -121,13 +122,13 @@ function init()
   speed = Math.random() * level * 0.01;
   //Antidestination = new THREE.Vector3();
   //empty = [0, 0, 0];
-  //Building_All = new THREE.Object3D();
+  Building_All = new THREE.Object3D();
   ammo_array = [0, 0, 0];
   //clonedAntiMissile = new THREE.Object3D();
   //AntiModel_left = new THREE.Object3D();
   //AntiModel_center = new THREE.Object3D();
   //AntiModel_right = new THREE.Object3D();
-  //AntiMissile_initial_position = [];
+  AntiMissile_initial_position = [];
 
   //m = new THREE.MTLLoader();
   //clonedMissile = new THREE.Object3D();
@@ -143,7 +144,7 @@ function init()
           clonedMissile = obj.clone();
           var position = Math.random() * (5 + 5) - 5;
           //var target= Math.random()*5;
-          clonedMissile.position.set(50 * position, 75 * i, 0);
+          clonedMissile.position.set(50 * position, 200 * i, 0);
           clonedMissile.rotateZ(Math.PI / 2);
           Model.add(clonedMissile);
           //scene.add(clonedMissile);
