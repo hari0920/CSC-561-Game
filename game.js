@@ -521,12 +521,12 @@ function MoveMissile()
       }
       else //off screen
       {
-        Model.children[i].position.y -= 0.5; // just move down 
+        Model.children[i].position.y -= 0.5*level*0.5; // just move down 
       }
     }
     else //off screen
     {
-      Model.children[i].position.y -= 0.5; // just move down 
+      Model.children[i].position.y -= 0.5*level*0.5; // just move down 
     }
   //check collision too
   current_position = Model.children[i].position;
