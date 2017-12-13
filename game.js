@@ -44,11 +44,11 @@ var sound1 = new THREE.Audio(listener);
 var audioLoader = new THREE.AudioLoader();
 
 //Load a sound and set it as the Audio object's buffer
-song = ['1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.mp3', '6.mp3', '06 Kashmir.mp3']
+song = ['1.mp3', '3.mp3', '4.mp3', '2.mp3', '5.mp3', '6.mp3', '06 Kashmir.mp3']
 audioLoader.load(song[0], function (buffer) {
   sound.setBuffer(buffer);
   sound.setLoop(false);
-  sound.setVolume(0.5);
+  sound.setVolume(0.1);
   sound.offset=5;
   sound.play();
 });
@@ -58,7 +58,7 @@ audioLoader.load('explosion.mp3', function (buffer) {
   //explosion_sound=buffer;
   sound1.setBuffer(buffer);
   sound1.setLoop(false);
-  sound1.setVolume(1.0);
+  sound1.setVolume(0.3);
   //sound1.play();
 });
 
@@ -70,9 +70,9 @@ renderer.setSize(WIDTH, HEIGHT);
 container.appendChild(renderer.domElement);
 
 /////////////////////////////
-var Number_of_Missiles=2*level;
+var Number_of_Missiles=4*level;
 Building_position =[];
-var ammo=3*level;
+var ammo=6*level;
 var speed = Math.random() * level * 0.01*2;
 var anti_target_array = [];
 anti_target_array[0]=[];
@@ -111,7 +111,7 @@ function init()
   audioLoader.load(song[level], function (buffer) {
     sound.setBuffer(buffer);
     sound.setLoop(false);
-    sound.setVolume(0.5);
+    sound.setVolume(0.1);
     sound.offset = 20;
     sound.play();
   });
@@ -120,12 +120,12 @@ function init()
   {
     sound.stop();
   }
-  Number_of_Missiles = 2*level;
+  Number_of_Missiles = 4*level;
   Buildings_Destroyed=0;
   //current_position = new THREE.Vector3();
   Building_position = [];
   //Anti_Missiles = new THREE.Object3D();
-  ammo = 3 * level;
+  ammo = 6 * level;
   anti_target_array = [];
   anti_target_array[0] = [];
   anti_target_array[1] = [];
@@ -987,7 +987,7 @@ function update
           MoveMissile();
           MoveAntiMissile();
           checkCollisionMissiles();
-          if ((score >= 400 * level) && (bonus == false)) {
+          if ((score >= 200 * level) && (bonus == false)) {
             scene.add(ship);
             bonus = true;
           }
