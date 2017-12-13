@@ -106,7 +106,8 @@ var position_of_missile = new THREE.Vector3();
 
 function init()
 {
-  sound.stop();
+  if(level<6)
+  {sound.stop();
   audioLoader.load(song[level], function (buffer) {
     sound.setBuffer(buffer);
     sound.setLoop(false);
@@ -114,8 +115,12 @@ function init()
     sound.offset = 20;
     sound.play();
   });
-
-  Number_of_Missiles = 2 * level;
+  }
+  else
+  {
+    sound.stop();
+  }
+  Number_of_Missiles = 2*level;
   Buildings_Destroyed=0;
   //current_position = new THREE.Vector3();
   Building_position = [];
@@ -360,6 +365,20 @@ m.load("win.mtl", function (materials) {
 }
 );
 
+var nlevel = new THREE.Object3D();
+m.load("level.mtl", function (materials) {
+  materials.preload();
+  var l = new THREE.OBJLoader();
+  l.setMaterials(materials);
+  l.load("level.obj", function (obj) {
+    nlevel = obj;
+    obj.position.set(-150, -100, -20);
+    obj.scale.set(5, 5, 5);
+    //scene.add(obj);
+  }
+  );
+}
+);
 //Building
  for (var i=-2;i<3;i++)
  {
@@ -565,7 +584,7 @@ function MoveAntiMissile()
       //if (current_position.y > Building_position[j].y) {
       destination = j.clone();
       direction = destination.sub(current_position);
-      direction.multiplyScalar(speed*2);
+      direction.multiplyScalar(speed*level);
       direction.normalize();
       angle = current_position.angleTo(j);
       //console.log(direction);
@@ -592,7 +611,7 @@ function MoveAntiMissile()
 
         destination = j.clone();
         direction = destination.sub(current_position);
-        direction.multiplyScalar(speed*2);
+        direction.multiplyScalar(speed*level);
         direction.normalize();
         angle = current_position.angleTo(j);
         //console.log(direction);
@@ -620,7 +639,7 @@ function MoveAntiMissile()
         //if (current_position.y > Building_position[j].y) {
         destination = j.clone();
         direction = destination.sub(current_position);
-        direction.multiplyScalar(speed*2);
+        direction.multiplyScalar(speed*level);
         direction.normalize();
         angle = current_position.angleTo(j);
         //console.log(direction);
@@ -957,28 +976,27 @@ function update
     }
     else
     {
-      //camera.position.z-=4;
-      //scene.remove(Text);
-      if(!game_over)
+      if(level<=5)
       {
-        //console.log(clock.oldTime);
-        scene.remove(spheres);
-        MoveMissile();
-        MoveAntiMissile();
-        checkCollisionMissiles();
-        if((score>=400*level) && (bonus==false))
-        {
-          scene.add(ship);
-          bonus=true;
-        }
-        if(bonus==true)
-        {
-          ship.position.x += level*0.5;//Math.random() * (5 + 5) - 5;
-          checkCollisionShip();
-        }
-        if(Model.children.length==0)
-        {
-          
+        //camera.position.z-=4;
+        //scene.remove(Text);
+        nlevel.position.x -= 0.8 * level;
+        if (!game_over) {
+          //console.log(clock.oldTime);
+          scene.remove(spheres);
+          MoveMissile();
+          MoveAntiMissile();
+          checkCollisionMissiles();
+          if ((score >= 400 * level) && (bonus == false)) {
+            scene.add(ship);
+            bonus = true;
+          }
+          if (bonus == true) {
+            ship.position.x += level * 0.5;//Math.random() * (5 + 5) - 5;
+            checkCollisionShip();
+          }
+          if (Model.children.length == 0) {
+
             //var new_level=level ++;
             level++;
             scene.remove(Model);
@@ -987,16 +1005,33 @@ function update
             scene.remove(AntiModel_center);
             scene.remove(AntiModel_right);
             init();
+            nlevel.position.set(-100, 100, 10);
+            nlevel.scale.set(4, 4, 4);
+            scene.add(nlevel);
             camera.position.z = 200;
+          }
         }
-      }
         //RaycasterUpdate();
         //console.log(Building_All);
         //Model.position.y-=1;
-      else 
+        else {
+          scene.add(Gplane);
+          camera.rotation.z += 0.002;
+        }
+
+      } // if not won
+      else
       {
-        scene.add(Gplane);
-        camera.rotation.z+=0.002;
+        scene.remove(Model);
+        scene.remove(Text);
+        scene.remove(ship);
+        scene.remove(nlevel);
+        scene.remove(Building_All);
+        scene.remove(AntiModel_left);
+        scene.remove(AntiModel_center);
+        scene.remove(AntiModel_right);
+        scene.add(win);
+        win.rotation.y += 0.002;
       }
       //zooming=false;
     }
