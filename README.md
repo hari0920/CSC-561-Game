@@ -9,6 +9,7 @@ The R key will reload the game.
 A spaceship will appear suddenly at times for bonus points!
 Note, you will get a health and ammo refill at every level to make the game enjoyable.
 Missile speed will rise quickly in later levels though.
+There is a game over screen and a victory condition too.
 Songs change per level, so be prepared for a fun experience!!
 
 The sound files included are a few different rock songs from YouTube. All rights belong to the original creators of the songs.

@@ -48,7 +48,7 @@ song = ['1.mp3', '3.mp3', '4.mp3', '2.mp3', '5.mp3', '6.mp3', '06 Kashmir.mp3']
 audioLoader.load(song[0], function (buffer) {
   sound.setBuffer(buffer);
   sound.setLoop(false);
-  sound.setVolume(0.1);
+  sound.setVolume(0.6);
   sound.offset=5;
   sound.play();
 });
@@ -58,7 +58,7 @@ audioLoader.load('explosion.mp3', function (buffer) {
   //explosion_sound=buffer;
   sound1.setBuffer(buffer);
   sound1.setLoop(false);
-  sound1.setVolume(0.3);
+  sound1.setVolume(0.4);
   //sound1.play();
 });
 
@@ -106,12 +106,13 @@ var position_of_missile = new THREE.Vector3();
 
 function init()
 {
-  if(level<6)
-  {sound.stop();
-  audioLoader.load(song[level], function (buffer) {
+  if(level<3)
+  {
+    sound.stop();
+    audioLoader.load(song[level], function (buffer) {
     sound.setBuffer(buffer);
     sound.setLoop(false);
-    sound.setVolume(0.1);
+    sound.setVolume(0.8);
     sound.offset = 20;
     sound.play();
   });
@@ -506,11 +507,9 @@ function UpdateAntiTarget(i,missile_launch_number,mousepos)
 //var prev_position = new THREE.Vector3();
 function MoveMissile()
 {
-  
   //workflow is as follows.for each missile, move it towards its target, check for collision.
   for(i=0;i<Model.children.length;i++)//for every missile
   {
-    
     //move towards target
     current_position = Model.children[i].position;
     prev_position=current_position.clone();
@@ -519,7 +518,7 @@ function MoveMissile()
     var j = UpdateTarget(); //returns one of the buildings
     if(current_position.y>Building_position[j].y)
     {
-      if(current_position.distanceToSquared(Building_position[j]) < 200*200) //if on screen
+      if(current_position.distanceToSquared(Building_position[j]) < 250*250) //if on screen
       {
       //calculate direction vector to target
       destination = Building_position[j].clone();

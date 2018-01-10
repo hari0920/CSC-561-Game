@@ -1,0 +1,6 @@
+Extra credit:
+2% Animate missile-missile and missile-city/battery explosions.
+2% Add periodic spaceships flying through as unusual targets players can shoot
+2% Track and display score. You can choose any scoring scale you want.
+2% When all descending missiles have been exploded or landed, a new level appears.
+2% Sound and music. On certain game events, e.g. game start, missile firing, explosions,  etc. play a sound effect.
